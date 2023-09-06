@@ -1,10 +1,13 @@
 import requests
+from requests import RequestException
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import json
 import rasterio 
 from rasterio.windows import Window
 from decouple import config
+
+from .exceptions import CopernicusBandsDownloadException, CopernicusAuthenticationException, CopernicusAvaliableFilesException, CopernicusManifestDownloadException
 
 
 #TODO: Make a query builder class to abstract the nonsense
@@ -40,8 +43,8 @@ class CopernicusClient:
         try :
             response = requests.get(search_query).json()
             return response['value']
-        except:
-            raise Exception('Error finding available files')
+        except RequestException as e:
+            raise CopernicusAvaliableFilesException from e
         
     #Main method in this class
     #Downloads the files
@@ -106,9 +109,8 @@ class CopernicusClient:
             outfile.write_bytes(file.content)
             return outfile
 
-        except Exception as e:
-            #TODO: Add constant
-            raise Exception('Error downloading manifest file')
+        except RequestException as e:
+            raise CopernicusManifestDownloadException from e
         
 
     def get_band_locations(self, product_name, outfile, band_list=True):
@@ -166,9 +168,9 @@ class CopernicusClient:
                 outfile = Path(band_path) / f"{product_identifier}-{band_file[4]}"
                 outfile.write_bytes(file.content)
                 bands.append(str(outfile))
-            except:
-                #TODO: Add transaction mechanism
-                raise Exception('Error downloading bands')
+                
+            except RequestException as e:
+                raise CopernicusBandsDownloadException from e
 
         return bands
     
@@ -235,8 +237,8 @@ class CopernicusClient:
             response = requests.post(auth_server_url, data=data, verify=True, allow_redirects=False)
             return json.loads(response.text)
         
-        except:
-            raise Exception('Authentication Error')
+        except RequestException as e:
+            raise CopernicusAuthenticationException from e
     
     
 
