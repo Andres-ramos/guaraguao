@@ -22,9 +22,8 @@ class Sentinel:
             search_period_end=search_end)
         files_df = pd.DataFrame.from_dict(avaliable_files_list)
 
-        product_name = files_df['Name'][0]
-        product_id = files_df['Id'][0]
-        band_list = ["b02", "b03", "b04"]
+        product_name = files_df['Name'][1]
+        product_id = files_df['Id'][1]
         unzipped_bands = self.data_downloader.download_files(
             product_identifier=product_id,
             product_name=product_name, 
@@ -33,24 +32,17 @@ class Sentinel:
             band_list=bands_list
             )
 
-        #Hardcoded for three bands
-        band2 = rasterio.open(Path(cache_path) / unzipped_bands[0], driver="JP2OpenJPEG")  # blue
-        band3 = rasterio.open(Path(cache_path) / unzipped_bands[1], driver="JP2OpenJPEG")  # green
-        band4 = rasterio.open(Path(cache_path) / unzipped_bands[2], driver="JP2OpenJPEG")  # red
-
-        red = band4.read(1)
-        green = band3.read(1)
-        blue = band2.read(1)
-
-
+        band_np_arrays = []
         gain = 2
-        red_n = np.clip(red * gain / 10000, 0, 1)
-        green_n = np.clip(green * gain / 10000, 0, 1)
-        blue_n = np.clip(blue * gain / 10000, 0, 1)
-        rgb_composite_n = np.dstack((red_n, green_n, blue_n))
-
-        return rgb_composite_n
-    #Should handle logic of deciding which  is to be downloaded
+        for band in unzipped_bands:
+            band = rasterio.open(Path(cache_path) / band, driver="JP2OpenJPEG")
+            color = band.read(1)
+            color_n = np.clip(color*gain/10000, 0, 1)
+            band_np_arrays.append(color_n)
+        
+        composite = np.dstack(band_np_arrays)
+        return composite
+        
 
 
 s = Sentinel()
@@ -59,5 +51,5 @@ aoi = "POLYGON ((-65.76543311765235 18.160414444432007, -65.77731192573422 18.15
 search_period_start = "2023-05-01T00:00:00.000Z"
 search_period_end = "2023-05-30T00:00:00.000Z"
 
-image = s.fetch_image(aoi, search_period_start, search_period_end, [])
+image = s.fetch_image(aoi, search_period_start, search_period_end, ["B2", "B3", "B4", "B1", "B11"])
 print(image)

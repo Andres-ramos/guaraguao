@@ -39,6 +39,7 @@ class CopernicusClient:
         Returns:
         list- each entry is a dict with information related to file
         '''
+        print("checking available files")
         search_query = f"{self.catalogue_odata_url}/Products?$filter=Collection/Name eq '{self.collection_name}' and Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'productType' and att/OData.CSC.StringAttribute/Value eq '{self.product_type}') and OData.CSC.Intersects(area=geography'SRID=4326;{aoi}') and ContentDate/Start gt {search_period_start} and ContentDate/Start lt {search_period_end}"
         try :
             response = requests.get(search_query).json()
@@ -59,19 +60,26 @@ class CopernicusClient:
         Returns:
         unzipped_bands - list with file name of each unzipped band
         '''
+        #TODO: Add check for band list
         #Downloads the manifest file
-        manifest = self.download_manifest(product_identifier, product_name, cache_path)
+        print("downloading manifest")
+        manifest_path = self.download_manifest(product_identifier, product_name, cache_path)
         #Finds band locations in the manifest
-        band_location = self.get_band_locations(product_name, manifest, band_list)
-        #Downloads the zipped file for each band
+        # print("Getting band locations")
+        band_location = self.get_band_locations(product_name, manifest_path, band_list)
+        # #Downloads the zipped file for each band
         bands = self.download_bands(band_location=band_location, 
                             product_identifier=product_identifier, 
                             product_name=product_name, band_path=cache_path)
-        #Unzips a subset of each zipped band file
+        # #Unzips a subset of each zipped band file
+        # bands = ["70d9a266-b69e-43a4-91d9-9b8daee0ec4e-T19QHA_20230502T150719_B04.jp2",
+        #          "70d9a266-b69e-43a4-91d9-9b8daee0ec4e-T19QHA_20230502T150719_B02.jp2",
+        #          "70d9a266-b69e-43a4-91d9-9b8daee0ec4e-T19QHA_20230502T150719_B03.jp2"]
+        # print(f"unzipping bands {bands}")
         unzipped_bands = self.unzip_bands(
             bands=bands, 
             aoi=aoi, 
-            band_path=cache_path, 
+            cache_path=cache_path, 
             uz_band_path=cache_path, 
             product_id=product_identifier)
         
@@ -92,7 +100,7 @@ class CopernicusClient:
         manifest_path (string) - path to store the manifest
 
         Returns:
-        manifest file - ??
+        manifest file (string) - path to manifest.xml file 
         '''
         url = f"{self.catalogue_odata_url}/Products({product_identifier})/Nodes({product_name})/Nodes(MTD_MSIL1C.xml)/$value"   
         #Waits for connection
@@ -113,7 +121,7 @@ class CopernicusClient:
             raise CopernicusManifestDownloadException from e
         
 
-    def get_band_locations(self, product_name, outfile, band_list=True):
+    def get_band_locations(self, product_name, outfile, band_list):
         '''
         Finds the band locations in the manifest
 
@@ -125,17 +133,15 @@ class CopernicusClient:
         returns:
         band_locations (list) - list with each band path
         '''
+       
         tree = ET.parse(str(outfile))
         # get the parent tag
         root = tree.getroot()
-
         # Get the location of individual bands in Sentinel-2 granule
         band_location = []
-
-        #TODO: Modularize this to extract bands programmatically
-        band_location.append(f"{product_name}/{root[0][0][12][0][0][1].text}.jp2".split("/"))
-        band_location.append(f"{product_name}/{root[0][0][12][0][0][2].text}.jp2".split("/"))
-        band_location.append(f"{product_name}/{root[0][0][12][0][0][3].text}.jp2".split("/"))
+        for band in band_list:
+            band_index = self.map_band_to_index(band)
+            band_location.append(f"{product_name}/{root[0][0][12][0][0][band_index].text}.jp2".split("/"))
 
         return band_location
     
@@ -154,17 +160,19 @@ class CopernicusClient:
         '''
         bands = []
         for band_file in band_location:
-            print(f"downloading bands {band_file[4]}")
+            #Waits for the connection
             url = f"{self.catalogue_odata_url}/Products({product_identifier})/Nodes({product_name})/Nodes({band_file[1]})/Nodes({band_file[2]})/Nodes({band_file[3]})/Nodes({band_file[4]})/$value"
             response = self.session.get(url, allow_redirects=False)
             while response.status_code in (301, 302, 303, 307):
+                print("Pending Download Connection")
                 url = response.headers["Location"]
                 response = self.session.get(url, allow_redirects=False)
             
+            #Tries to download the file once its connected
             try :
+                print("Downloading")
                 file = self.session.get(url, verify=False, allow_redirects=True)
 
-                #TODO: Rename band file name to correspond to a given file
                 outfile = Path(band_path) / f"{product_identifier}-{band_file[4]}"
                 outfile.write_bytes(file.content)
                 bands.append(str(outfile))
@@ -175,17 +183,17 @@ class CopernicusClient:
         return bands
     
 
-    def unzip_bands(self, bands, aoi, band_path, uz_band_path, product_id):
+    def unzip_bands(self, bands, aoi, cache_path, uz_band_path, product_id):
 
         #TODO: Modularize this
         xsize, ysize = 10980/2 , 10980/2
         xoff, yoff, xmax, ymax = 0, 0, 0, 0
-        n = 2
         unzipped_bands = []
         for band_file in bands:
-
             # Reads the zipped jp2 filezipped
-            full_band = rasterio.open(band_file, driver="JP2OpenJPEG")
+            band_number = self.get_band_number(band_file)
+            #TODO: Add the crs to the opening of the file
+            full_band = rasterio.open(f"{cache_path}/{band_file}", driver="JP2OpenJPEG")
             if xmax == 0:
                 xmin, xmax = 0, full_band.width - xsize
             if ymax == 0:
@@ -199,18 +207,50 @@ class CopernicusClient:
             crs = full_band.crs
             profile.update({"height": xsize, "width": ysize, "transform": transform})
 
-            file_name = f"unzipped-{product_id}-patch_band_{n}.jp2"
+            file_name = f"unzipped-{product_id}-patch_band_{band_number}.jp2"
             with rasterio.open(
                 Path(uz_band_path) / file_name, "w", **profile
             ) as patch_band:
                 # Read the data from the window and write it to the output raster
                 patch_band.write(full_band.read(window=window))
-            print(f"Patch for band {n} created")
-            n += 1
+
             unzipped_bands.append(file_name)
 
         return unzipped_bands
+    
+    def get_band_number(self, band):
+        '''
+        Helper method that gets band number from band file
+        '''
+        s = band.split("_")[-1]
+        d = s.split(".")[0]
+        num_str = d.split("B")[1]
+        
+        if num_str[0] == "0":
+            return int(num_str[1])
+    
+        return int(num_str)
 
+    def map_band_to_index(self, band):
+        '''
+        Helper method that maps band to index in manifest
+        '''
+        band_dict = {
+            "B1": 0,
+            "B2": 1,
+            "B3": 2,
+            "B4": 3,
+            "B5": 4,
+            "B6": 5,
+            "B7": 6,
+            "B8": 7,
+            "B8A": 8,
+            "B9": 9,
+            "B10": 10,
+            "B11": 11,
+            "B12": 12
+        }
+        return band_dict[band]
     #########################################################################
     #Authentication stuff:
     #########################################################################
