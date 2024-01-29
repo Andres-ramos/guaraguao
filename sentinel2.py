@@ -1,8 +1,9 @@
 from earth_engine import earth_engine
 import rioxarray as rxr
 from io import BytesIO
+import json
 
-
+from typing import List
 
 class Sentinel2:
 
@@ -11,22 +12,31 @@ class Sentinel2:
         self.data_downloader = earth_engine.EarthEngineAPI()
 
 
+    #TODO: Implement once requierements are ironed out
     def fetch_images(self, aoi, search_start, search_end, bands_list):
         return 
 
-    def fetch_image(self, aoi, date, band_list):
-        in_storage = False
+    #TODO: Implement storage mechanism
+    def fetch_image(
+            self, 
+            aoi: json, 
+            date: str, 
+            bands_list: List[str]
+        ):
+        
         #TODO: Check storage
+        in_storage = False  #Hardcoded
+        
         if in_storage:
             #TODO: Implement
-            image = self.storage.get()
+            # image = self.storage.get()
             return 
         else :
             try :
+                #TODO: Add storage
                 image_bytes = self.data_downloader.fetch_image_bytes(
-                    aoi, date, band_list
-                    )
-      
+                    aoi, date, bands_list
+                )
                 # image_id = self.storage.put(aoi, date, band_list, image_bytes)
                 byte_stream = BytesIO(image_bytes)
                 return rxr.open_rasterio(byte_stream)
