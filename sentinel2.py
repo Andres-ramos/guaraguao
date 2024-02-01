@@ -1,10 +1,10 @@
-from earth_engine import earth_engine
+from .earth_engine import earth_engine
 import rioxarray as rxr
 from io import BytesIO
 import json
 
 from typing import List
-
+from typing import json
 class Sentinel2:
 
     def __init__(self):
