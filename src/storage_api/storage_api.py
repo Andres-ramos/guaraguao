@@ -10,12 +10,33 @@ import pysqlite3 as sqlite3
 
 import os
 
+from typing import Dict, List
+
+from typing_json import json
+
+from shapely.geometry import shape
+
+import shapely 
 class FileSystemStorage:
+    """
+    Implements file system storage
+    Has a spatiallite database to record which satellite images
+    are on record
+    Uses file system to store images
+    """
     def __init__(self):
         self.cache_path = "cache"
         self.conn = self.initialize() 
 
-    def fetch(self, image_id):
+    def fetch(self, image_id:str) -> Dict[str, any]:
+        """
+        Fetches image bytes by image id
+        Return {
+            success: bool,
+            in_storage: bool,
+            image_bytes: None | bytes
+        }
+        """
         cursor = self.conn.cursor()
         fetch_query =f"""
                 SELECT id, file_path FROM SatelliteImage WHERE id="{image_id}" ;                    
@@ -27,15 +48,23 @@ class FileSystemStorage:
             file = fd.read()
 
         return {
-            "sucess": True, 
+            "success": True, 
             "in_storage": True,
             "image_bytes": file
-            }
+        }
 
     
-    def put(self, aoi, date, band_list, image_bytes):
-
-        aoi_in_wkt = "POINT (-65.93254449244697 18.195348751892297)"
+    def put(
+            self, 
+            aoi:json, 
+            date:str, 
+            band_list: List[str], 
+            image_bytes: any
+        ) -> Dict[str, any]:
+        """
+        Puts image information in db and file system storage
+        """
+        aoi_in_wkt = shapely.to_wkt(shape(aoi["features"][0]["geometry"]))
         path = f'{os.getcwd()}/{self.cache_path}'
         cursor = self.conn.cursor()
         insert_query ="""
@@ -51,16 +80,22 @@ class FileSystemStorage:
         cursor.execute(insert_query, data_to_insert)
         self.conn.commit()
 
-        #TODO: Modify id to have database id as file name
-        filename = "id.tif"
+        filename = f"{cursor.lastrowid}.tif"
+        
         #Store image bytes 
         with open(f"{path}/{filename}", 'wb') as fd:
             fd.write(image_bytes)
 
         return "Success"
     
-    def in_storage(self, aoi, date, band_list):
-        aoi_in_wkt = "POINT (-65.93254449244697 18.195348751892297)"
+    def in_storage(
+            self, 
+            aoi: json, 
+            date: str, 
+            band_list: List[str]
+        ) -> Dict[str, any]:
+
+        aoi_in_wkt = shapely.to_wkt(shape(aoi["features"][0]["geometry"]))
         cursor = self.conn.cursor()
         fetch_query =f"""
                 SELECT * FROM SatelliteImage 
@@ -73,12 +108,18 @@ class FileSystemStorage:
         )
         cursor.execute(fetch_query, date_for_query)
         image_record = cursor.fetchone()
-        return {
-            "sucess": True, 
-            "in_storage": True,
-            "id": image_record[0]
+        if image_record:
+            return {
+                "sucess": True, 
+                "in_storage": True,
+                "id": image_record[0]
+                }
+        else :
+            return {
+                "sucess": True, 
+                "in_storage": False,
+                "id": None
             }
-
     
     #Initialization part 
     def initialize(self):
@@ -98,7 +139,6 @@ class FileSystemStorage:
         """
         if not os.path.exists(f"{os.getcwd()}/{self.cache_path}"):
             try :
-                # print()
                 os.mkdir(f'{os.getcwd()}/{self.cache_path}')
             
             except :
@@ -106,7 +146,7 @@ class FileSystemStorage:
             
         return 
     
-    def initialize_db(self):
+    def initialize_db(self) -> sqlite3.connect:
         """
         Initializes the database connection
         Create satellite image table if not created

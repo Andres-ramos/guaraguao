@@ -34,11 +34,10 @@ class Sentinel2:
             date: str, 
             band_list: List[str]
         """
-        #TODO: Check storage
+
         store_response = self.storage.in_storage(aoi, date, band_list)
-        # print
-        # in_storage = True
         if store_response["in_storage"]:
+            print("in store")
             image_id = store_response["id"]
             store_response = self.storage.fetch(image_id)
             image_bytes = store_response["image_bytes"]
@@ -46,6 +45,7 @@ class Sentinel2:
             return rxr.open_rasterio(byte_stream)
 
         else :
+            print("not in store")
             try :
                 image_bytes = self.data_downloader.fetch_image_bytes(
                     aoi, date, band_list
@@ -56,7 +56,3 @@ class Sentinel2:
             
             except Exception as e:
                 raise e
-
-    def seed_db(self):
-        self.storage.fetch()
-        return 
