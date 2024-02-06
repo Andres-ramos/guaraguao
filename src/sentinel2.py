@@ -35,25 +35,27 @@ class Sentinel2:
             band_list: List[str]
         """
         #TODO: Check storage
-        in_storage = self.storage.in_storage(aoi, date, band_list)
-        print(in_storage)
-        # if in_storage:
-        #     image_id = 3
-        #     image_bytes = self.storage.fetch(image_id)
-        #     byte_stream = BytesIO(image_bytes)
-        #     return rxr.open_rasterio(byte_stream)
+        store_response = self.storage.in_storage(aoi, date, band_list)
+        # print
+        # in_storage = True
+        if store_response["in_storage"]:
+            image_id = store_response["id"]
+            store_response = self.storage.fetch(image_id)
+            image_bytes = store_response["image_bytes"]
+            byte_stream = BytesIO(image_bytes)
+            return rxr.open_rasterio(byte_stream)
 
-        # else :
-        #     try :
-        #         image_bytes = self.data_downloader.fetch_image_bytes(
-        #             aoi, date, band_list
-        #         )
-        #         self.storage.put(aoi, date, band_list, image_bytes)
-        #         byte_stream = BytesIO(image_bytes)
-        #         return rxr.open_rasterio(byte_stream)
+        else :
+            try :
+                image_bytes = self.data_downloader.fetch_image_bytes(
+                    aoi, date, band_list
+                )
+                self.storage.put(aoi, date, band_list, image_bytes)
+                byte_stream = BytesIO(image_bytes)
+                return rxr.open_rasterio(byte_stream)
             
-        #     except Exception as e:
-        #         raise e
+            except Exception as e:
+                raise e
 
     def seed_db(self):
         self.storage.fetch()

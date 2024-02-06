@@ -25,7 +25,12 @@ class FileSystemStorage:
         filename = f"{id}.tif"
         with open(f"{file_path}/{filename}", 'rb') as fd:
             file = fd.read()
-            return file
+
+        return {
+            "sucess": True, 
+            "in_storage": True,
+            "image_bytes": file
+            }
 
     
     def put(self, aoi, date, band_list, image_bytes):
@@ -67,9 +72,15 @@ class FileSystemStorage:
             str(band_list)
         )
         cursor.execute(fetch_query, date_for_query)
-        image_record = cursor.fetchone()[0]
-        return image_record
+        image_record = cursor.fetchone()
+        return {
+            "sucess": True, 
+            "in_storage": True,
+            "id": image_record[0]
+            }
+
     
+    #Initialization part 
     def initialize(self):
         """
         Initializes cache and database 
@@ -81,6 +92,10 @@ class FileSystemStorage:
         return cur
 
     def initialize_cache(self):
+        """
+        Checks if cache folder has been created
+        Uses cache name specified in class initializer
+        """
         if not os.path.exists(f"{os.getcwd()}/{self.cache_path}"):
             try :
                 # print()
@@ -92,6 +107,11 @@ class FileSystemStorage:
         return 
     
     def initialize_db(self):
+        """
+        Initializes the database connection
+        Create satellite image table if not created
+        """
+        #TODO: Figure out if this is the best way to do this? 
         conn = sqlite3.connect('gis.db')
         conn.enable_load_extension(True)
         conn.load_extension("mod_spatialite")
