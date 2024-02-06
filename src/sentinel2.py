@@ -1,20 +1,19 @@
-from earth_engine import earth_engine
+from .earth_engine import earth_engine
 import rioxarray as rxr
 from io import BytesIO
 import json
 
 from typing import List
-# from typing import json
+
 from typing_json import json
 
-from storage_api import storage_api
+from .storage_api import storage_api
 
 
 class Sentinel2:
 
     def __init__(self):
         self.storage = storage_api.FileSystemStorage()
-        self.storage.fetch()
         self.data_downloader = earth_engine.EarthEngineAPI()
 
 
@@ -27,26 +26,35 @@ class Sentinel2:
             self, 
             aoi: json, 
             date: str, 
-            bands_list: List[str]
+            band_list: List[str]
         ):
-        
+        """
+        Input: 
+            aoi: geojson, 
+            date: str, 
+            band_list: List[str]
+        """
         #TODO: Check storage
-        in_storage = False  #Hardcoded
-        print(self.storage)
+        in_storage = self.storage.in_storage(aoi, date, band_list)
+        print(in_storage)
         # if in_storage:
-        #     #TODO: Implement
-        #     # image = self.storage.get()
-        #     return 
+        #     image_id = 3
+        #     image_bytes = self.storage.fetch(image_id)
+        #     byte_stream = BytesIO(image_bytes)
+        #     return rxr.open_rasterio(byte_stream)
+
         # else :
         #     try :
-        #         #TODO: Add storage
         #         image_bytes = self.data_downloader.fetch_image_bytes(
-        #             aoi, date, bands_list
+        #             aoi, date, band_list
         #         )
-        #         # image_id = self.storage.put(aoi, date, band_list, image_bytes)
+        #         self.storage.put(aoi, date, band_list, image_bytes)
         #         byte_stream = BytesIO(image_bytes)
         #         return rxr.open_rasterio(byte_stream)
+            
         #     except Exception as e:
         #         raise e
 
-s = Sentinel2()
+    def seed_db(self):
+        self.storage.fetch()
+        return 
