@@ -70,3 +70,10 @@ class Sentinel2:
         
         except Exception as e:
             raise e
+
+    def fetch_storage_path(self, aoi, date, band_list) -> str:
+        try :
+            store_response = self.storage.in_storage(aoi, date, band_list)
+            return store_response["path"]
+        except Exception as e:
+            raise e

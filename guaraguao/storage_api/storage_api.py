@@ -104,17 +104,21 @@ class FileSystemStorage:
         )
         cursor.execute(fetch_query, date_for_query)
         image_record = cursor.fetchone()
+        path = image_record[3]
+
         if image_record:
             return {
                 "sucess": True, 
                 "in_storage": True,
-                "id": image_record[0]
+                "id": image_record[0],
+                "path": path
                 }
         else :
             return {
                 "sucess": True, 
                 "in_storage": False,
-                "id": None
+                "id": None,
+                "path": None
             }
     
     #Initialization part 
