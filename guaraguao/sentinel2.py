@@ -1,14 +1,18 @@
 from .earth_engine import earth_engine
+from .copernicus import copernicus
+
+from .storage_api import storage_api
+
 import rioxarray as rxr
 from io import BytesIO
 import json
 
-from typing import List
+from typing import List, Dict
 
 from typing_json import json
 
-from .storage_api import storage_api
 import xarray 
+import pandas as pd
 
 
 class Sentinel2:
@@ -21,6 +25,7 @@ class Sentinel2:
     def __init__(self):
         self.storage = storage_api.FileSystemStorage()
         self.data_downloader = earth_engine.EarthEngineAPI()
+        self.copernicus_client = copernicus.CopernicusClient("SENTINEL-2")
 
     def fetch_image(
             self, 
@@ -72,7 +77,12 @@ class Sentinel2:
             raise e
 
     #TODO: Make this method better
-    def fetch_storage_path(self, aoi, date, band_list) -> str:
+    def fetch_storage_path(
+            self, 
+            aoi: json, 
+            date: str, 
+            band_list: List[str]
+        ) -> str:
         """
         Fetches the path where the image is stored
         Image must be in storage
@@ -94,3 +104,11 @@ class Sentinel2:
 
         except Exception as e:
             raise e
+        
+    def check_available_images(
+            self, 
+            aoi: json, 
+            date_start: str,
+            date_end: str
+            ) -> Dict[str, any]:
+        return pd.DataFrame(self.copernicus_client.check_available_files(aoi, date_start, date_end))

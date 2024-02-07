@@ -9,6 +9,11 @@ from decouple import config
 
 from .exceptions import CopernicusBandsDownloadException, CopernicusAuthenticationException, CopernicusAvaliableFilesException, CopernicusManifestDownloadException
 
+from shapely.geometry import shape 
+import shapely 
+
+from typing import Dict
+from typing_json import json
 
 #TODO: Make a query builder class to abstract the nonsense
 #TODO: Add constants file
@@ -28,21 +33,26 @@ class CopernicusClient:
     ###################################################################################
 
     #Method to check available files in copernicus enviroment
-    def check_available_files(self, aoi, search_period_start, search_period_end):
+    def check_available_files(
+            self, 
+            aoi: json, 
+            search_period_start: str, 
+            search_period_end: str
+        )-> Dict[str, any]:
         '''Method that checks the avaliable data files in the copernicus enviroment
 
         Parameters:
-        aoi (shapely polygon as a string) - area of interest / region for the images
+        aoi (shapely polygon as a string) - geojson
         search_period_start (date) - start date of searching period
         search_period_end (date) - end date of searching period
 
         Returns:
         list- each entry is a dict with information related to file
         '''
-        print("checking available files")
-        search_query = f"{self.catalogue_odata_url}/Products?$filter=Collection/Name eq '{self.collection_name}' and Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'productType' and att/OData.CSC.StringAttribute/Value eq '{self.product_type}') and OData.CSC.Intersects(area=geography'SRID=4326;{aoi}') and ContentDate/Start gt {search_period_start} and ContentDate/Start lt {search_period_end}"
+        aoi_in_wkt = shapely.to_wkt(shape(aoi["features"][0]["geometry"]))
+        search_query = f"{self.catalogue_odata_url}/Products?$filter=Collection/Name eq '{self.collection_name}' and Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'productType' and att/OData.CSC.StringAttribute/Value eq '{self.product_type}') and OData.CSC.Intersects(area=geography'SRID=4326;{aoi_in_wkt}') and ContentDate/Start gt {search_period_start} and ContentDate/Start lt {search_period_end}"
         try :
-            response = requests.get(search_query).json()
+            response = self.session.get(search_query).json()
             return response['value']
         except RequestException as e:
             raise CopernicusAvaliableFilesException from e
