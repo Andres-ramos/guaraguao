@@ -71,9 +71,17 @@ class Sentinel2:
         except Exception as e:
             raise e
 
+    #TODO: Make this method better
     def fetch_storage_path(self, aoi, date, band_list) -> str:
+        """
+        Fetches the path where the image is stored
+        Image must be in storage
+        """
         try :
             store_response = self.storage.in_storage(aoi, date, band_list)
-            return store_response["path"]
+            if store_response["in_storage"]:
+                return store_response["path"]
+            
+            raise Exception("Not in storage")
         except Exception as e:
             raise e
