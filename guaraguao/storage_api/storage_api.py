@@ -1,11 +1,3 @@
-from geoalchemy2 import load_spatialite
-
-from sqlalchemy import create_engine
-
-from sqlalchemy.event import listen
-
-from .mapping import SatelliteImage
-
 import pysqlite3 as sqlite3
 
 import os
@@ -17,6 +9,7 @@ from typing_json import json
 from shapely.geometry import shape
 
 import shapely 
+
 class FileSystemStorage:
     """
     Implements file system storage
@@ -81,12 +74,15 @@ class FileSystemStorage:
         self.conn.commit()
 
         filename = f"{cursor.lastrowid}.tif"
-        
+
         #Store image bytes 
         with open(f"{path}/{filename}", 'wb') as fd:
             fd.write(image_bytes)
 
-        return "Success"
+        return {
+            "success": True,
+            "id": cursor.lastrowid
+        }
     
     def in_storage(
             self, 
@@ -167,7 +163,3 @@ class FileSystemStorage:
         '''
         cur.execute(create_table_query)
         return conn
-    
-    def generate_filename(self, aoi, date, band_list):
-
-        return 
