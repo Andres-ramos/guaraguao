@@ -79,9 +79,18 @@ class Sentinel2:
         """
         try :
             store_response = self.storage.in_storage(aoi, date, band_list)
+            #If file is in storaage
             if store_response["in_storage"]:
                 return store_response["path"]
             
-            raise Exception("Not in storage")
+            #Otherwise download file
+            image_bytes = self.data_downloader.fetch_image_bytes(
+                aoi, date, band_list
+            )
+            #puts file in storage
+            self.storage.put(aoi, date, band_list, image_bytes)
+            store_response = self.storage.in_storage(aoi, date, band_list)
+            return store_response["path"]
+
         except Exception as e:
             raise e
