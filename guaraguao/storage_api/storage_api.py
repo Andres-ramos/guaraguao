@@ -104,13 +104,14 @@ class FileSystemStorage:
         )
         cursor.execute(fetch_query, date_for_query)
         image_record = cursor.fetchone()
-        path = image_record[3]
+        image_id = image_record[0]
+        path = f"{image_record[3]}/{image_id}.tif"
 
         if image_record:
             return {
                 "sucess": True, 
                 "in_storage": True,
-                "id": image_record[0],
+                "id": image_id,
                 "path": path
                 }
         else :
