@@ -17,7 +17,7 @@ password=password
 ```
 TODO: 
 1. Add band_list as an optional parameter and as a default put all the bands
-2. Change naming scheme! Right now packge is called Satellite-API which can't be imported into python because of the "-"
-3. Add wrapper to the available_files method to simply return the date of the available picture
-4. Add better documentation. Particularly how to get the earth engine stuff and the copernicus stuff. 
-5. Fix earth engine constants file! It needs to be modified in order to get the earth engine credentials
+2. Add wrapper to the available_files method to simply return the date of the available picture
+3. Add better documentation. Particularly how to get the earth engine stuff and the copernicus stuff.
+4. Add feature to specify cache and db name. Add feature to export data in nice format????
+5. Add example of usage to documentation :)
