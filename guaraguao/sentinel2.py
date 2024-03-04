@@ -22,16 +22,19 @@ class Sentinel2:
     Uses data downloader to fetch images
     and storage api for caching
     """
-    def __init__(self):
-        self.storage = storage_api.FileSystemStorage()
-        self.data_downloader = earth_engine.EarthEngineAPI()
+    def __init__(self, cache_name="cache", collection='COPERNICUS/S2_SR_HARMONIZED'):
+        self.collection = collection
+        self.storage = storage_api.FileSystemStorage(cache_name)
+        self.data_downloader = earth_engine.EarthEngineAPI(collection)
         self.copernicus_client = copernicus.CopernicusClient("SENTINEL-2")
+        self.satellite_name = "SENTINEL-2"
 
     def fetch_image(
             self, 
             aoi: json, 
             date: str, 
-            band_list: List[str]
+            band_list: List[str] = ['B1','B2', 'B3', 'B4', 'B5', 'B6', 'B7',
+             'B8', 'B8A','B9', 'B11', 'B12']
         ) -> xarray.Dataset:
         """
         Fetches image from data source or from cache
@@ -45,7 +48,13 @@ class Sentinel2:
         """
         #Checks storage
         try :
-            store_response = self.storage.in_storage(aoi, date, band_list)
+            store_response = self.storage.in_storage(
+                aoi, 
+                date, 
+                band_list, 
+                self.collection, 
+                self.satellite_name
+            )
         
         except Exception as e:
             raise e
@@ -68,7 +77,14 @@ class Sentinel2:
                 aoi, date, band_list
             )
             #puts file in storage
-            self.storage.put(aoi, date, band_list, image_bytes)
+            self.storage.put(
+                aoi, 
+                date, 
+                band_list,
+                self.collection, 
+                self.satellite_name,
+                image_bytes
+            )
             byte_stream = BytesIO(image_bytes)
             #TODO: Add metadata
             return rxr.open_rasterio(byte_stream)
@@ -88,7 +104,13 @@ class Sentinel2:
         Image must be in storage
         """
         try :
-            store_response = self.storage.in_storage(aoi, date, band_list)
+            store_response = self.storage.in_storage(
+                aoi, 
+                date, 
+                band_list, 
+                self.collection, 
+                self.satellite_name
+            )
             #If file is in storaage
             if store_response["in_storage"]:
                 return store_response["path"]

@@ -12,10 +12,10 @@ from typing import List
 
 from .constants import EarthEngineConstants
 
-class EarthEngineAPI():
-    def __init__(self):
+class EarthEngineAPI:
+    def __init__(self, collection):
         self.initialize()
-        self.sentinel_collection = 'COPERNICUS/S2_SR_HARMONIZED'
+        self.sentinel_collection = collection
     
     def fetch_image_bytes(
             self, 
