@@ -22,12 +22,13 @@ class Sentinel2:
     Uses data downloader to fetch images
     and storage api for caching
     """
-    def __init__(self, cache_name="cache", collection='COPERNICUS/S2_SR_HARMONIZED'):
+    def __init__(self, cache_name="cache", collection='S2_SR_HARMONIZED'):
+        self.satellite_name = "COPERNICUS"
         self.collection = collection
         self.storage = storage_api.FileSystemStorage(cache_name)
-        self.data_downloader = earth_engine.EarthEngineAPI(collection)
+        self.data_downloader = earth_engine.EarthEngineAPI(f"{self.satellite_name}/{self.collection}")
         self.copernicus_client = copernicus.CopernicusClient("SENTINEL-2")
-        self.satellite_name = "SENTINEL-2"
+        
 
     def fetch_image(
             self, 
