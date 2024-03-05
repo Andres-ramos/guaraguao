@@ -4,11 +4,13 @@ import pandas as pd
 import io 
 import requests 
 import json
+import shapely
 
 from .exceptions import EarthEngineNoAvailableFile
 from .exceptions import EarthEngineFileDownloadException
 
 from typing import List
+from typing import Dict
 
 from .constants import EarthEngineConstants
 
@@ -62,7 +64,6 @@ class EarthEngineAPI:
                 ee.Date(end_date)
                 ).filterBounds(ee_polygon)
         
-
         if collection.size().getInfo() > 1:
             image = collection.mosaic()
             return image.clip(ee_polygon)
@@ -156,4 +157,22 @@ class EarthEngineAPI:
         ee.Initialize(
             credentials, 
             project=EarthEngineConstants.PROJECT_NAME)
-        
+    
+    def get_image_dates(
+            self, 
+            aoi_geojson:json, 
+            start_date:str, 
+            end_date:str
+        ) -> Dict[str, any]:
+        """
+        Returns available images 
+        """
+        ee_polygon = self.get_aoi(aoi_geojson)
+        start_date = pd.to_datetime(start_date)
+        end_date = pd.to_datetime(end_date)
+        collection = ee.ImageCollection(
+            self.sentinel_collection).filterDate(
+                ee.Date(start_date), 
+                ee.Date(end_date)
+                ).filterBounds(ee_polygon)
+        return collection.getInfo()

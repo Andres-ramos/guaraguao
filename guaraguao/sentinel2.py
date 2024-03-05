@@ -13,6 +13,7 @@ from typing_json import json
 
 import xarray 
 import pandas as pd
+import datetime
 
 
 class Sentinel2:
@@ -93,12 +94,12 @@ class Sentinel2:
         except Exception as e:
             raise e
 
-    #TODO: Make this method better
     def fetch_storage_path(
             self, 
             aoi: json, 
             date: str, 
-            band_list: List[str]
+            band_list: List[str] = ['B1','B2', 'B3', 'B4', 'B5', 'B6', 'B7',
+             'B8', 'B8A','B9', 'B11', 'B12']
         ) -> str:
         """
         Fetches the path where the image is stored
@@ -121,8 +122,22 @@ class Sentinel2:
                 aoi, date, band_list
             )
             #puts file in storage
-            self.storage.put(aoi, date, band_list, image_bytes)
-            store_response = self.storage.in_storage(aoi, date, band_list)
+            self.storage.put(
+                aoi, 
+                date, 
+                band_list,
+                self.collection,
+                self.satellite_name,
+                image_bytes
+            )
+            #Gets storage path
+            store_response = self.storage.in_storage(
+                aoi, 
+                date, 
+                band_list, 
+                self.collection, 
+                self.satellite_name
+            )
             return store_response["path"]
 
         except Exception as e:
@@ -131,7 +146,46 @@ class Sentinel2:
     def check_available_images(
             self, 
             aoi: json, 
-            date_start: str,
-            date_end: str
-            ) -> Dict[str, any]:
-        return pd.DataFrame(self.copernicus_client.check_available_files(aoi, date_start, date_end))
+            start_date: str,
+            end_date: str
+        ) -> Dict[str, any]:
+        """
+        Return dataframe of files in a given date range
+        """
+        try :
+            collection = self.data_downloader.get_image_dates(
+                aoi,
+                start_date, 
+                end_date
+            )
+        
+        except Exception as e:
+            raise Exception("ERROR: Fetch available files")
+        
+
+        features =  collection["features"]
+        image_entries = [self.generate_image_row(
+            features[i]["properties"]
+            )for i in range(len(features))
+        ]
+        return pd.DataFrame(image_entries)
+    
+    def generate_image_row(self,properties:json) -> Dict[str, str]:
+        """
+        Generate and image entry row
+        Input : properties json
+        Output: image entry dict
+
+        {
+            satellite_name: str,
+            datetime: str
+        }
+        """
+        #TODO: Add more metadata from properties
+        gen_time = properties["GENERATION_TIME"]
+        timestamp = (gen_time/1000)
+        dt_object = datetime.datetime.fromtimestamp(timestamp)
+        return {
+            "satellite_name": properties["SPACECRAFT_NAME"],
+            "datetime": f"{dt_object.year}-{dt_object.month}-{dt_object.day} {dt_object.hour}:{dt_object.minute}:{dt_object.second}"
+        }
