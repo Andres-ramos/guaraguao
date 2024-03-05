@@ -1,0 +1,1 @@
+DATABASE_SCHEMA_URL = "./guaraguao/guaraguao/storage_api/schema.sql"

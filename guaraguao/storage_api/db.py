@@ -1,5 +1,7 @@
 import sqlite3
 
+from .constants import DATABASE_SCHEMA_URL
+
 def get_db(db_name):
 
     db = sqlite3.connect(
@@ -13,6 +15,5 @@ def get_db(db_name):
 
 def init_db(db_name):
     db = get_db(db_name)
-    #TODO: Modularize file name
-    with open('./guaraguao/storage_api/schema.sql') as fp:
+    with open(DATABASE_SCHEMA_URL) as fp:
         db.executescript(fp.read())
