@@ -187,5 +187,6 @@ class Sentinel2:
         dt_object = datetime.datetime.fromtimestamp(timestamp)
         return {
             "satellite_name": properties["SPACECRAFT_NAME"],
-            "datetime": f"{dt_object.year}-{dt_object.month}-{dt_object.day} {dt_object.hour}:{dt_object.minute}:{dt_object.second}"
+            "date": f"{dt_object.year}-{dt_object.month}-{dt_object.day}",
+            "time": f"{dt_object.hour}:{dt_object.minute}:{dt_object.second}"
         }
