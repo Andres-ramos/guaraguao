@@ -1,1 +1,1 @@
-from .guaraguao import sentinel2
+from .guaraguao.sentinel2 import Sentinel2
