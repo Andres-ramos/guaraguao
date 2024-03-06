@@ -41,7 +41,7 @@ class Sentinel2:
         """
         Fetches image from data source or from cache
         Input: 
-            aoi: geojson, 
+            aoi: geojson (FeatureCollection | Polygon), 
             date: str, 
             band_list: List[str]
 
@@ -49,9 +49,11 @@ class Sentinel2:
             Rioxarray with image
         """
         #Checks storage
+        polygon_aoi = self.process_aoi(aoi)
+        print(polygon_aoi)
         try :
             store_response = self.storage.in_storage(
-                aoi, 
+                polygon_aoi, 
                 date, 
                 band_list, 
                 self.collection, 
@@ -76,11 +78,11 @@ class Sentinel2:
         try :
             #Fetches file 
             image_bytes = self.data_downloader.fetch_image_bytes(
-                aoi, date, band_list
+                polygon_aoi, date, band_list
             )
             #puts file in storage
             self.storage.put(
-                aoi, 
+                polygon_aoi, 
                 date, 
                 band_list,
                 self.collection, 
@@ -105,9 +107,10 @@ class Sentinel2:
         Fetches the path where the image is stored
         Image must be in storage
         """
+        polygon_aoi = self.process_aoi(aoi)
         try :
             store_response = self.storage.in_storage(
-                aoi, 
+                polygon_aoi, 
                 date, 
                 band_list, 
                 self.collection, 
@@ -123,7 +126,7 @@ class Sentinel2:
             )
             #puts file in storage
             self.storage.put(
-                aoi, 
+                polygon_aoi, 
                 date, 
                 band_list,
                 self.collection,
@@ -132,7 +135,7 @@ class Sentinel2:
             )
             #Gets storage path
             store_response = self.storage.in_storage(
-                aoi, 
+                polygon_aoi, 
                 date, 
                 band_list, 
                 self.collection, 
@@ -190,3 +193,17 @@ class Sentinel2:
             "date": f"{dt_object.year}-{dt_object.month}-{dt_object.day}",
             "time": f"{dt_object.hour}:{dt_object.minute}:{dt_object.second}"
         }
+    
+    def process_aoi(self, aoi:json) -> json:
+        """
+        Processes aoi to be in polygon type
+        Input: geojson aoi,
+        Output: Polygon geojson
+        """
+        geom_type = aoi["type"]
+        processing_functions = {
+            "FeatureCollection": lambda feature_collection : feature_collection['features'][0]['geometry'],
+            "Polygon": lambda polygon: polygon
+        }
+  
+        return processing_functions[geom_type](aoi)

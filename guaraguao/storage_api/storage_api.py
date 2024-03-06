@@ -54,7 +54,7 @@ class FileSystemStorage:
     
     def put(
             self, 
-            aoi:json, 
+            aoi_polygon:json, 
             date:str, 
             band_list: List[str], 
             collection: str,
@@ -64,7 +64,7 @@ class FileSystemStorage:
         """
         Puts image information in db and file system storage
         """
-        aoi_in_wkt = shapely.to_wkt(shape(aoi["features"][0]["geometry"]))
+        aoi_in_wkt = shapely.to_wkt(shape(aoi_polygon))
         path = f'{os.getcwd()}/{self.cache_path}'
         cursor = self.db.cursor()
         insert_query ="""
@@ -95,14 +95,14 @@ class FileSystemStorage:
     
     def in_storage(
             self, 
-            aoi: json, 
+            aoi_polygon: json, 
             date: str, 
             band_list: List[str],
             collection: str,
             satellite: str
         ) -> Dict[str, any]:
 
-        aoi_in_wkt = shapely.to_wkt(shape(aoi["features"][0]["geometry"]))
+        aoi_in_wkt = shapely.to_wkt(shape(aoi_polygon))
         cursor = self.db.cursor()
         fetch_query =f"""
                 SELECT * FROM SatelliteImage 

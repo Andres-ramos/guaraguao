@@ -21,21 +21,21 @@ class EarthEngineAPI:
     
     def fetch_image_bytes(
             self, 
-            aoi_geojson: json, 
+            aoi_polygon: json, 
             date:str, 
             band_list: List[str]
         ):
         '''
         Fetches image
         Input: 
-            aoi_geojson - aoi in geojson format
+            aoi_polygon - aoi polygon in geojson format
             date - date "yyyy-mm-dd" format
             band_list -
         Output :
             geotiff bytes 
         '''
         #Converts geojson to ee polygon
-        ee_aoi = self.get_aoi(aoi_geojson)
+        ee_aoi = self.get_aoi(aoi_polygon)
         #Fetches the image
         ee_image = self.get_image(date, ee_aoi)
         #Downloads the image bytes
@@ -75,12 +75,12 @@ class EarthEngineAPI:
     
     def get_aoi(
             self, 
-            aoi_geojson: json
+            aoi_polygon: json
         ):
         """
-        Converts feature collection geojson to polygon
+        Converts polygon geojson to ee polygon
         """
-        coords = aoi_geojson['features'][0]['geometry']['coordinates']
+        coords = aoi_polygon['coordinates']
         return ee.Geometry.Polygon(coords)
     
     def to_geotiff_bytes(
