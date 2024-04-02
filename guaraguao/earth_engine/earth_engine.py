@@ -63,7 +63,6 @@ class EarthEngineAPI:
                 ee.Date(start_date), 
                 ee.Date(end_date)
                 ).filterBounds(ee_polygon)
-        
         if collection.size().getInfo() > 1:
             image = collection.mosaic()
             return image.clip(ee_polygon)
@@ -102,7 +101,8 @@ class EarthEngineAPI:
             'bands': bands_list,
             'region': ee_image_aoi,
             'scale': scale,
-            'format': 'GEO_TIFF'
+            'format': 'GEO_TIFF',
+            'crs': 'EPSG:4326'
         })
         try :
             response = requests.get(url)

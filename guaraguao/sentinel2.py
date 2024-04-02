@@ -50,7 +50,6 @@ class Sentinel2:
         """
         #Checks storage
         polygon_aoi = self.process_aoi(aoi)
-        print(polygon_aoi)
         try :
             store_response = self.storage.in_storage(
                 polygon_aoi, 
@@ -70,7 +69,8 @@ class Sentinel2:
                 image_bytes = store_response["image_bytes"]
                 byte_stream = BytesIO(image_bytes)
                 #TODO: Add metadata to rioxarray
-                return rxr.open_rasterio(byte_stream)
+                data = rxr.open_rasterio(byte_stream)
+                return data
             
             except Exception as e:
                 raise e
@@ -91,7 +91,8 @@ class Sentinel2:
             )
             byte_stream = BytesIO(image_bytes)
             #TODO: Add metadata
-            return rxr.open_rasterio(byte_stream)
+            data = rxr.open_rasterio(byte_stream)
+            return data
         
         except Exception as e:
             raise e
