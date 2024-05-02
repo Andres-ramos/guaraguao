@@ -82,33 +82,28 @@ class Sentinel2:
                 raise e
         #If file not in storage, fetches, stores and returns
         try :
-            #Fetches image metadata
-            image_metadata = self.data_downloader.fetch_image_metadata(
-                polygon_aoi, date
-            )
-            #Fetches image bytes
-            image_bytes = self.data_downloader.fetch_image_bytes(
+            #Fetches image data
+            image = self.data_downloader.fetch_image(
                 polygon_aoi, date, band_list
             )
-            #puts file in storage
             self.storage.put(
                 polygon_aoi, 
                 date, 
                 band_list,
                 self.collection, 
                 self.satellite_name,
-                image_bytes,
-                image_metadata
+                image["bytes"],
+                image["metadata"]
             )
             
-            byte_stream = BytesIO(image_bytes)
+            byte_stream = BytesIO(image["bytes"])
             data = rxr.open_rasterio(byte_stream)
             #TODO: Change the bands index to [B1, B2, ....]
             #TODO: Modify index in x, y to lat/lng
             # bands = ['B1','B2', 'B3', 'B4', 'B5', 'B6', 'B7',
             #  'B8', 'B8A','B9', 'B11', 'B12']
             # data = data.assign_coords(band=bands)
-            data.attrs = image_metadata
+            data.attrs = image["metadata"]
             return data
         
         except Exception as e:

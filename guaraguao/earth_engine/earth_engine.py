@@ -19,8 +19,27 @@ import datetime
 
 class EarthEngineAPI:
     def __init__(self, collection):
-        self.initialize()
+        self._initialize()
         self.sentinel_collection = collection
+    
+
+    def fetch_image(
+            self,
+            aoi_polygon,
+            date,
+            band_list
+        ):
+        ee_aoi = self.get_aoi(aoi_polygon)
+        #Fetches the image
+        ee_image = self.get_image(date, ee_aoi)
+        #Downloads the image bytes
+        geotiff_bytes = self.to_geotiff_bytes(ee_image, band_list)
+        ee_image_metadata = ee_image.getInfo()
+
+        return {
+            "bytes": geotiff_bytes,
+            "metadata": ee_image_metadata
+        }
     
     def fetch_image_bytes(
             self, 
@@ -43,6 +62,7 @@ class EarthEngineAPI:
         ee_image = self.get_image(date, ee_aoi)
         #Downloads the image bytes
         geotiff_bytes = self.to_geotiff_bytes(ee_image, band_list)
+        ee_image_metadata = ee_image.getInfo()
         return geotiff_bytes
 
     def fetch_image_metadata(
@@ -78,8 +98,8 @@ class EarthEngineAPI:
             "system:time_end"
         ]
 
-        start_date_time = datetime.datetime.fromtimestamp(data["properties"]["system:time_start"]/1000)
-        end_date_time = datetime.datetime.fromtimestamp(data["properties"]["system:time_end"]/1000)
+        start_date_time = datetime.datetime.fromtimestamp(data_json["properties"]["system:time_start"]/1000)
+        end_date_time = datetime.datetime.fromtimestamp(data_json["properties"]["system:time_end"]/1000)
 
         data = {key:data_json["properties"][key] for key in metadata_keys}
         data["system:time_start"] = start_date_time.strftime("%m/%d/%Y, %H:%M:%S")
@@ -190,7 +210,7 @@ class EarthEngineAPI:
         except Exception as e:
             raise EarthEngineFileDownloadException from e
         
-    def initialize(self):
+    def _initialize(self):
         """
         Authenticates earth engine
         """
