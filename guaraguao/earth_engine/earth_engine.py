@@ -78,13 +78,13 @@ class EarthEngineAPI:
             "system:time_end"
         ]
 
-        start_date_time = datetime.datetime.fromtimestamp(data["system:time_start"]/1000)
-        end_date_time = datetime.datetime.fromtimestamp(data["system:time_end"]/1000)
+        start_date_time = datetime.datetime.fromtimestamp(data["properties"]["system:time_start"]/1000)
+        end_date_time = datetime.datetime.fromtimestamp(data["properties"]["system:time_end"]/1000)
 
         data = {key:data_json["properties"][key] for key in metadata_keys}
         data["system:time_start"] = start_date_time.strftime("%m/%d/%Y, %H:%M:%S")
         data["system:time_end"] = end_date_time.strftime("%m/%d/%Y, %H:%M:%S")
-        
+
         return data
 
     def get_image(
