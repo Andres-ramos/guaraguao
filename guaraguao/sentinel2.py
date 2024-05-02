@@ -65,18 +65,28 @@ class Sentinel2:
         if store_response["in_storage"]:
             image_id = store_response["id"]
             try :
+                #Fetches image from storage
                 store_response = self.storage.fetch(image_id)
+                #Extracts metadata
+                metadata = store_response["image_metadata"]
+                #Contructs bytestream
                 image_bytes = store_response["image_bytes"]
                 byte_stream = BytesIO(image_bytes)
-                #TODO: Add metadata to rioxarray
+                #Creates rioxarray
                 data = rxr.open_rasterio(byte_stream)
+                data.attrs = metadata
+
                 return data
             
             except Exception as e:
                 raise e
         #If file not in storage, fetches, stores and returns
         try :
-            #Fetches file 
+            #Fetches image metadata
+            image_metadata = self.data_downloader.fetch_image_metadata(
+                polygon_aoi, date
+            )
+            #Fetches image bytes
             image_bytes = self.data_downloader.fetch_image_bytes(
                 polygon_aoi, date, band_list
             )
@@ -87,11 +97,18 @@ class Sentinel2:
                 band_list,
                 self.collection, 
                 self.satellite_name,
-                image_bytes
+                image_bytes,
+                image_metadata
             )
+            
             byte_stream = BytesIO(image_bytes)
-            #TODO: Add metadata
             data = rxr.open_rasterio(byte_stream)
+            #TODO: Change the bands index to [B1, B2, ....]
+            #TODO: Modify index in x, y to lat/lng
+            # bands = ['B1','B2', 'B3', 'B4', 'B5', 'B6', 'B7',
+            #  'B8', 'B8A','B9', 'B11', 'B12']
+            # data = data.assign_coords(band=bands)
+            data.attrs = image_metadata
             return data
         
         except Exception as e:

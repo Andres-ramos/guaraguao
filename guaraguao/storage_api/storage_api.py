@@ -36,11 +36,19 @@ class FileSystemStorage:
         """
         # cursor = self.conn.cursor()
         fetch_query =f"""
-                SELECT id, file_path FROM SatelliteImage WHERE id="{image_id}" ;                    
+                SELECT * FROM SatelliteImage WHERE id="{image_id}" ;                    
             """
+        #Fetches image row
         cursor = self.db.cursor()
         cursor.execute(fetch_query)
-        id, file_path = cursor.fetchone()
+        image_db_entry = cursor.fetchone()
+
+        #Extracts relevant data from row
+        id = image_db_entry[0]
+        file_path = image_db_entry[3]
+        metadata = eval(image_db_entry[-1])
+
+        #Reads file bytes
         filename = f"{id}.tif"
         with open(f"{file_path}/{filename}", 'rb') as fd:
             file = fd.read()
@@ -48,7 +56,8 @@ class FileSystemStorage:
         return {
             "success": True, 
             "in_storage": True,
-            "image_bytes": file
+            "image_bytes": file,
+            "image_metadata": metadata
         }
 
     
@@ -59,7 +68,8 @@ class FileSystemStorage:
             band_list: List[str], 
             collection: str,
             satellite: str,
-            image_bytes: any
+            image_bytes: any,
+            image_metadata : Dict[str,any],
         ) -> Dict[str, any]:
         """
         Puts image information in db and file system storage
@@ -68,16 +78,20 @@ class FileSystemStorage:
         path = f'{os.getcwd()}/{self.cache_path}'
         cursor = self.db.cursor()
         insert_query ="""
-                INSERT INTO SatelliteImage (aoi, date, band_list, file_path, collection, satellite) VALUES (
-                    ?, ?, ?, ?, ?, ?);                    
+                INSERT INTO SatelliteImage (aoi, date, band_list, file_path, collection, satellite, metadata) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?);                    
             """
+        #Inserts image_metadata... 
+        #TODO: Normalize metadata
+        #TODO: Correct solution is to add metadata table....
         data_to_insert = (
             f"GeomFromText('{aoi_in_wkt}', 4326)",
             date,
             str(band_list),
             path,
             collection,
-            satellite
+            satellite,
+            str(image_metadata)
         )
         cursor.execute(insert_query, data_to_insert)
         self.db.commit()

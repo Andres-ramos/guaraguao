@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS SatelliteImage (
   file_path TEXT NOT NULL,
   band_list TEXT NOT NULL,
   collection TEXT NOT NULL,
-  satellite TEXT NOT NULL
+  satellite TEXT NOT NULL,
+  metadata TEXT NOT NULL
 );

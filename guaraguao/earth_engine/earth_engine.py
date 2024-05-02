@@ -14,6 +14,9 @@ from typing import Dict
 
 from .constants import EarthEngineConstants
 
+import datetime
+
+
 class EarthEngineAPI:
     def __init__(self, collection):
         self.initialize()
@@ -41,6 +44,48 @@ class EarthEngineAPI:
         #Downloads the image bytes
         geotiff_bytes = self.to_geotiff_bytes(ee_image, band_list)
         return geotiff_bytes
+
+    def fetch_image_metadata(
+            self, 
+            aoi_polygon: json, 
+            date:str
+        ):
+        '''
+        Fetches image metadata
+        Input: 
+            aoi_polygon - aoi polygon in geojson format
+            date - date "yyyy-mm-dd" format
+        Output :
+            {
+                "SPACECRAFT_NAME",
+                "MEAN_SOLAR_AZIMUTH_ANGLE",
+                "MEAN_SOLAR_ZENITH_ANGLE",
+                "system:time_start",
+                "system:time_end"
+            }
+        '''
+        #Converts geojson to ee polygon
+        ee_aoi = self.get_aoi(aoi_polygon)
+        #Fetches the image
+        ee_image = self.get_image(date, ee_aoi)
+
+        data_json = ee_image.getInfo()
+        metadata_keys = [
+            "SPACECRAFT_NAME",
+            "MEAN_SOLAR_AZIMUTH_ANGLE",
+            "MEAN_SOLAR_ZENITH_ANGLE",
+            "system:time_start",
+            "system:time_end"
+        ]
+
+        start_date_time = datetime.datetime.fromtimestamp(data["system:time_start"]/1000)
+        end_date_time = datetime.datetime.fromtimestamp(data["system:time_end"]/1000)
+
+        data = {key:data_json["properties"][key] for key in metadata_keys}
+        data["system:time_start"] = start_date_time.strftime("%m/%d/%Y, %H:%M:%S")
+        data["system:time_end"] = end_date_time.strftime("%m/%d/%Y, %H:%M:%S")
+        
+        return data
 
     def get_image(
             self,
