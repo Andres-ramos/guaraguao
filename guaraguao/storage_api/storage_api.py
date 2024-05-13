@@ -23,7 +23,7 @@ class FileSystemStorage:
     """
     def __init__(self, cache="cache"):
         self.cache_path = cache
-        self.db = self.initialize(cache) 
+        self.db = self._initialize(cache) 
 
     def fetch(self, image_id:str) -> Dict[str, any]:
         """
@@ -50,14 +50,16 @@ class FileSystemStorage:
 
         #Reads file bytes
         filename = f"{id}.tif"
-        with open(f"{file_path}/{filename}", 'rb') as fd:
+        image_path = f"{file_path}/{filename}"
+        with open(image_path, 'rb') as fd:
             file = fd.read()
 
         return {
             "success": True, 
             "in_storage": True,
             "image_bytes": file,
-            "image_metadata": metadata
+            "image_metadata": metadata,
+            "image_path": image_path
         }
 
     
@@ -97,14 +99,15 @@ class FileSystemStorage:
         self.db.commit()
 
         filename = f"{cursor.lastrowid}.tif"
-
+        image_path = f"{path}/{filename}"
         #Store image bytes 
-        with open(f"{path}/{filename}", 'wb') as fd:
+        with open(image_path, 'wb') as fd:
             fd.write(image_bytes)
 
         return {
             "success": True,
-            "id": cursor.lastrowid
+            "id": cursor.lastrowid,
+            "image_path": image_path
         }
     
     def in_storage(
@@ -150,12 +153,12 @@ class FileSystemStorage:
             }
     
     #Initialization part 
-    def initialize(self, db_name):
+    def _initialize(self, db_name):
         """
         Initializes cache and database 
         """
         #Create cache
-        self.initialize_cache()
+        self._initialize_cache()
         #Checks if db file exists
         if not os.path.isfile(db_name):
             db = init_db(db_name)
@@ -164,7 +167,7 @@ class FileSystemStorage:
 
         return db
 
-    def initialize_cache(self):
+    def _initialize_cache(self):
         """
         Checks if cache folder has been created
         Uses cache name specified in class initializer

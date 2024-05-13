@@ -15,6 +15,9 @@ import xarray
 import pandas as pd
 import datetime
 
+from .exceptions import Sentinel2AOIFormatException
+from .exceptions import Sentinel2StorageAPIException
+from .exceptions import Sentinel2DataDownloaderException
 
 class Sentinel2:
     """
@@ -49,7 +52,11 @@ class Sentinel2:
             Rioxarray with image
         """
         #Checks storage
-        polygon_aoi = self.process_aoi(aoi)
+        try :
+            polygon_aoi = self._process_aoi(aoi)
+
+        except Exception as e:
+            raise Sentinel2AOIFormatException(e)
         try :
             store_response = self.storage.in_storage(
                 polygon_aoi, 
@@ -60,15 +67,17 @@ class Sentinel2:
             )
         
         except Exception as e:
-            raise e
+            raise Sentinel2StorageAPIException(e)
         #If file in storage returns files
         if store_response["in_storage"]:
             image_id = store_response["id"]
             try :
                 #Fetches image from storage
                 store_response = self.storage.fetch(image_id)
+                # print("store response", store_response)
                 #Extracts metadata
                 metadata = store_response["image_metadata"]
+                metadata["image_path"] = store_response["image_path"]
                 #Contructs bytestream
                 image_bytes = store_response["image_bytes"]
                 byte_stream = BytesIO(image_bytes)
@@ -79,14 +88,17 @@ class Sentinel2:
                 return data
             
             except Exception as e:
-                raise e
+                raise Sentinel2StorageAPIException(e)
         #If file not in storage, fetches, stores and returns
         try :
             #Fetches image data
             image = self.data_downloader.fetch_image(
                 polygon_aoi, date, band_list
             )
-            self.storage.put(
+        except Exception as e:
+            raise Sentinel2DataDownloaderException(e)
+        try :
+            image_storage_data = self.storage.put(
                 polygon_aoi, 
                 date, 
                 band_list,
@@ -95,7 +107,7 @@ class Sentinel2:
                 image["bytes"],
                 image["metadata"]
             )
-            
+            image["metadata"]["image_path"] = image_storage_data
             byte_stream = BytesIO(image["bytes"])
             data = rxr.open_rasterio(byte_stream)
             #TODO: Change the bands index to [B1, B2, ....]
@@ -107,7 +119,7 @@ class Sentinel2:
             return data
         
         except Exception as e:
-            raise e
+            raise Sentinel2StorageAPIException(e)
 
     def fetch_storage_path(
             self, 
@@ -180,13 +192,13 @@ class Sentinel2:
         
 
         features =  collection["features"]
-        image_entries = [self.generate_image_row(
+        image_entries = [self._generate_image_row(
             features[i]["properties"]
             )for i in range(len(features))
         ]
         return pd.DataFrame(image_entries)
     
-    def generate_image_row(self,properties:json) -> Dict[str, str]:
+    def _generate_image_row(self,properties:json) -> Dict[str, str]:
         """
         Generate and image entry row
         Input : properties json
@@ -207,7 +219,7 @@ class Sentinel2:
             "time": f"{dt_object.hour}:{dt_object.minute}:{dt_object.second}"
         }
     
-    def process_aoi(self, aoi:json) -> json:
+    def _process_aoi(self, aoi:json) -> json:
         """
         Processes aoi to be in polygon type
         Input: geojson aoi,
