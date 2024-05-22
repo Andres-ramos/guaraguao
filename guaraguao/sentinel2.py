@@ -74,7 +74,6 @@ class Sentinel2:
             try :
                 #Fetches image from storage
                 store_response = self.storage.fetch(image_id)
-                # print("store response", store_response)
                 #Extracts metadata
                 metadata = store_response["image_metadata"]
                 metadata["image_path"] = store_response["image_path"]
@@ -107,7 +106,7 @@ class Sentinel2:
                 image["bytes"],
                 image["metadata"]
             )
-            image["metadata"]["image_path"] = image_storage_data
+            image["metadata"]["image_path"] = image_storage_data["image_path"]
             byte_stream = BytesIO(image["bytes"])
             data = rxr.open_rasterio(byte_stream)
             #TODO: Change the bands index to [B1, B2, ....]
@@ -180,9 +179,11 @@ class Sentinel2:
         """
         Return dataframe of files in a given date range
         """
+        polygon_aoi = self._process_aoi(aoi)
+
         try :
             collection = self.data_downloader.get_image_dates(
-                aoi,
+                polygon_aoi,
                 start_date, 
                 end_date
             )
