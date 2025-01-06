@@ -1,1 +1,1 @@
-DATABASE_SCHEMA_URL = "./guaraguao/guaraguao/storage_api/schema.sql"
+DATABASE_SCHEMA_URL = "./guaraguao/storage_api/schema.sql"
