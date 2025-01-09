@@ -8,9 +8,13 @@ setup(
     author='Andres Ramos',
     author_email='ramosandres443@gmail.com',
     license='BSD 2-clause',
-    packages=['guaraguao'],
+    packages=['guaraguao', 'guaraguao.earth_engine', 'guaraguao.storage_api', 'guaraguao.copernicus'],
     install_requires=[
-                      'numpy',                     
+                      'typing-json',
+                      'shapely',
+                      'rioxarray',
+                      'earthengine-api',
+                      'python-decouple'        
                       ],
 
     classifiers=[

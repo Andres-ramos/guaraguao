@@ -1,7 +1,7 @@
-from .earth_engine import earth_engine
-from .copernicus import copernicus
+from guaraguao.earth_engine import earth_engine
+from guaraguao.copernicus import copernicus
 
-from .storage_api import storage_api
+from guaraguao.storage_api import storage_api
 
 import rioxarray as rxr
 from io import BytesIO
@@ -33,13 +33,13 @@ class Sentinel2:
         self.data_downloader = earth_engine.EarthEngineAPI(f"{self.satellite_name}/{self.collection}")
         self.copernicus_client = copernicus.CopernicusClient("SENTINEL-2")
         
-
+    # TODO: Put band list in constants
     def fetch_image(
             self, 
             aoi: json, 
-            date: str, 
+            date: str, #que foking formato?????? 
             band_list: List[str] = ['B1','B2', 'B3', 'B4', 'B5', 'B6', 'B7',
-             'B8', 'B8A','B9', 'B10' ,'B11', 'B12']
+             'B8', 'B8A','B9', 'B11' ,'B12']
         ) -> xarray.Dataset:
         """
         Fetches image from data source or from cache
@@ -125,7 +125,7 @@ class Sentinel2:
             aoi: json, 
             date: str, 
             band_list: List[str] = ['B1','B2', 'B3', 'B4', 'B5', 'B6', 'B7',
-             'B8', 'B8A','B9', 'B10','B11', 'B12']
+             'B8', 'B8A','B9','B11', 'B12']
         ) -> str:
         """
         Fetches the path where the image is stored

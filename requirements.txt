@@ -21,7 +21,6 @@ googleapis-common-protos==1.61.0
 greenlet==3.0.1
 httplib2==0.22.0
 idna==3.4
-leaflet==0.0.3
 numpy==1.26.2
 packaging==23.2
 pandas==2.1.3

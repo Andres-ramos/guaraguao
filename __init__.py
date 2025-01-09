@@ -1,1 +1,0 @@
-from .guaraguao.sentinel2 import Sentinel2
