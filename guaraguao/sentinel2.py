@@ -1,5 +1,4 @@
 from guaraguao.earth_engine import earth_engine
-from guaraguao.copernicus import copernicus
 
 from guaraguao.storage_api import storage_api
 
@@ -31,7 +30,6 @@ class Sentinel2:
         self.collection = collection
         self.storage = storage_api.FileSystemStorage(cache_name)
         self.data_downloader = earth_engine.EarthEngineAPI(f"{self.satellite_name}/{self.collection}")
-        self.copernicus_client = copernicus.CopernicusClient("SENTINEL-2")
         
     # TODO: Put band list in constants
     def fetch_image(

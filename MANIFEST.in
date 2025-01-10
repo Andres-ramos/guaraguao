@@ -1,0 +1,2 @@
+include guaraguao/storage_api/*.sql
+include guaraguao/earth_engine/*.json

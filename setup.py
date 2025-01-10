@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='guaraguao',
@@ -23,4 +23,5 @@ setup(
         'License :: OSI Approved :: BSD License',  
         'Operating System :: POSIX :: Linux',        
     ],
+    include_package_data=True
 )
