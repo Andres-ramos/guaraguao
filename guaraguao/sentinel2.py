@@ -37,7 +37,7 @@ class Sentinel2:
             aoi: json, 
             date: str, #que foking formato?????? 
             band_list: List[str] = ['B1','B2', 'B3', 'B4', 'B5', 'B6', 'B7',
-             'B8', 'B8A','B9', 'B11' ,'B12']
+             'B8', 'B8A','B9', 'B10' ,'B11' ,'B12']
         ) -> xarray.Dataset:
         """
         Fetches image from data source or from cache
